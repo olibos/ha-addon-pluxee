@@ -1,0 +1,27 @@
+name: "Firefly iii - Pluxee"
+description: "Import Pluxee transactions effortlessly into Firefly III for streamlined finance."
+version: "0.1.0"
+slug: "ha-addon-pluxee"
+init: false
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: services
+options:
+  cron: 0 0 6,12,18 * * *
+schema:
+  login: str
+  password: str
+  url: url
+  token: str
+  cron: str?
+  lunch: int?
+  book: int?
+  eco: int?
+  gift: int?
+  sportCulture: int?
+  transport: int?
+  conso: int?

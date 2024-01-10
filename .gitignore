@@ -1,0 +1,6 @@
+node_modules/
+dist/
+docker/index.mjs
+src/options.json
+coverage/
+test-report.xml

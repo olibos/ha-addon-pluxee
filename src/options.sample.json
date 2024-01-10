@@ -1,0 +1,9 @@
+{
+    "login": "Pluxee Login",
+    "password": "Pluxee Password",
+    "url": "http://firefly/",
+    "token": "xxxxxxxxxxx",
+    "cron": "0 0 6,12,18 * * *",
+    "lunch": 666,
+    "eco": 666
+}
