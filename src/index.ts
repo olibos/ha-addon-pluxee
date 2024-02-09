@@ -1,6 +1,6 @@
 import { readFile } from 'fs/promises';
 import type { SearchTransactionResponse, AddTransactionRequest, GetAccountInfoResponse, Transaction } from './firefly.model'
-import { authenticateUser, getWalletTransactionsIterator, getWalletInfo, type ProductCode } from './pluxee-services';
+import { authenticateUser, getWalletTransactionsIterator, getWalletInfo, type ProductCode, type WalletTransaction } from './pluxee-services';
 
 import { CronJob } from 'cron';
 type Options = {
@@ -34,14 +34,42 @@ async function loadOptions(path: string) {
   return JSON.parse(await readFile(path, 'utf8')) as Options;
 }
 
+function toFireflyTransaction(pluxeeTransaction: WalletTransaction, externalId: string, accountId: number) {
+  if (!pluxeeTransaction.amount) return null;
+
+  const transaction: Partial<Transaction> = {
+    amount: Math.abs(pluxeeTransaction.amount).toFixed(2),
+    date: pluxeeTransaction.date,
+    external_id: externalId,
+    tags: ['Pluxee']
+  };
+  if (pluxeeTransaction.type === 'SPENDING') {
+    const { affiliateName, city } = pluxeeTransaction;
+    transaction.type = 'withdrawal';
+    transaction.source_id = accountId.toString();
+    transaction.destination_name = affiliateName;
+    transaction.description = `${affiliateName}, ${city}`;
+  } else if (pluxeeTransaction.type === 'DEPOSIT') {
+    const { faceValue, numberOfUnit, clientName } = pluxeeTransaction;
+    transaction.type = 'deposit';
+    transaction.source_name = clientName;
+    transaction.description = `${clientName}: ${numberOfUnit} x ${faceValue.toFixed(2)} € = ${(numberOfUnit * faceValue).toFixed(2)}`;
+    transaction.destination_id = accountId.toString();
+  } else {
+    console.warn(`Unmanaged transaction type: ${pluxeeTransaction.type}`);
+    return null;
+  }
+
+  return transaction as Transaction;
+}
+
 async function check({ login, password, url: baseUrl, token: fireflyToken, after, ...options }: Options) {
   console.info('Check Pluxee');
   const token = await authenticateUser(login, password);
   const { listOfProducts } = await getWalletInfo(token);
   for (const { productCode, balance } of listOfProducts) {
     const type = accountMapping.get(productCode);
-    if (!type) continue;
-    const accountId = options[type];
+    const accountId = type && options[type];
     if (!accountId) continue;
 
     for await (const record of getWalletTransactionsIterator(token, productCode)) {
@@ -58,28 +86,8 @@ async function check({ login, password, url: baseUrl, token: fireflyToken, after
       const transactionId = searchTransactionResult.data[0]?.id;
       if (transactionId) break;
 
-      const transaction: Partial<Transaction> = {
-        amount: Math.abs(record.amount).toFixed(2),
-        date: record.date,
-        external_id: externalId,
-        tags: ['Pluxee']
-      };
-      if (record.type === 'SPENDING') {
-        const { affiliateName, city } = record;
-        transaction.type = 'withdrawal';
-        transaction.source_id = accountId.toString();
-        transaction.destination_name = affiliateName;
-        transaction.description = `${affiliateName}, ${city}`;
-      } else if (record.type === 'DEPOSIT') {
-        const { faceValue, numberOfUnit, clientName } = record;
-        transaction.type = 'deposit';
-        transaction.source_name = clientName;
-        transaction.description = `${clientName}: ${numberOfUnit} x ${faceValue.toFixed(2)} € = ${(numberOfUnit * faceValue).toFixed(2)}`;
-        transaction.destination_id = accountId.toString();
-      } else {
-        console.warn(`Unmanaged transaction type: ${record.type}`);
-        continue;
-      }
+      const transaction = toFireflyTransaction(record, externalId, accountId);
+      if (!transaction) continue;
 
       await fetch(
         new URL('/api/v1/transactions', baseUrl),
@@ -117,7 +125,7 @@ async function check({ login, password, url: baseUrl, token: fireflyToken, after
 }
 
 loadOptions(process.env.OPTION_FILE ?? '/data/options.json')
-  .then(async options => {
+  .then(options => {
     CronJob.from({
       cronTime: options.cron,
       onTick: async () => { await check(options); }
