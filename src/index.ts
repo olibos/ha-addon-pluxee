@@ -20,7 +20,7 @@ type Options = {
 }
 
 type NumericKeys<T> = {
-  [K in keyof T]: Required<T>[K] extends number ? K : never;
+  [K in keyof T]-?: Required<T>[K] extends number ? K : never;
 }[keyof T];
 const accountMapping = new Map<ProductCode, NumericKeys<Options>>([
   ['ECP', 'conso'],
@@ -63,6 +63,60 @@ function toFireflyTransaction(pluxeeTransaction: WalletTransaction, externalId: 
   return transaction as Transaction;
 }
 
+async function processTransactions(token: string, productCode: ProductCode, accountId: number, baseUrl: string, fireflyToken: string, after?: string) {
+  for await (const record of getWalletTransactionsIterator(token, productCode)) {
+    if (!record.amount || !('type' in record)) continue;
+    if (after && record.date <= after) continue;
+
+    const externalId = `pluxee_${record.id}`;
+    const searchTransactionResponse = await fetch(
+      new URL(`/api/v1/search/transactions?query=external_id%3A%22${externalId}%22&page=1`, baseUrl),
+      {
+        headers: { Authorization: `Bearer ${fireflyToken}` }
+      });
+    const searchTransactionResult = await searchTransactionResponse.json() as SearchTransactionResponse;
+    const transactionId = searchTransactionResult.data[0]?.id;
+    if (transactionId) break;
+
+    const transaction = toFireflyTransaction(record, externalId, accountId);
+    if (!transaction) continue;
+
+    await fetch(
+      new URL('/api/v1/transactions', baseUrl),
+      {
+        method: 'post',
+        headers: {
+          Authorization: `Bearer ${fireflyToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          error_if_duplicate_hash: false,
+          transactions: [transaction]
+        } satisfies AddTransactionRequest)
+      });
+  }
+}
+
+async function updateBalance(options: Partial<Options>, type: NumericKeys<Options>, baseUrl: string, fireflyToken: string, balance: number) {
+  const { data: { attributes: { current_balance: currentBalanceText, virtual_balance: virtualBalance } } } = await fetch(
+    new URL(`/api/v1/accounts/${options[type]}`, baseUrl),
+    { headers: { Authorization: `Bearer ${fireflyToken}` } }).then(async (r) => await r.json() as GetAccountInfoResponse);
+
+  const currentBalance = parseFloat(currentBalanceText);
+  if (balance !== currentBalance) {
+    await fetch(
+      new URL(`/api/v1/accounts/${options[type]}`, baseUrl),
+      {
+        method: 'put',
+        body: JSON.stringify({ virtual_balance: balance - currentBalance + parseFloat(virtualBalance) }),
+        headers: {
+          Authorization: `Bearer ${fireflyToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+  }
+}
+
 async function check({ login, password, url: baseUrl, token: fireflyToken, after, ...options }: Options) {
   console.info('Check Pluxee');
   const token = await authenticateUser(login, password);
@@ -72,55 +126,8 @@ async function check({ login, password, url: baseUrl, token: fireflyToken, after
     const accountId = type && options[type];
     if (!accountId) continue;
 
-    for await (const record of getWalletTransactionsIterator(token, productCode)) {
-      if (!record.amount || !('type' in record)) continue;
-      if (after && record.date <= after) continue;
-
-      const externalId = `pluxee_${record.id}`;
-      const searchTransactionResponse = await fetch(
-        new URL(`/api/v1/search/transactions?query=external_id%3A%22${externalId}%22&page=1`, baseUrl),
-        {
-          headers: { Authorization: `Bearer ${fireflyToken}` }
-        });
-      const searchTransactionResult = await searchTransactionResponse.json() as SearchTransactionResponse;
-      const transactionId = searchTransactionResult.data[0]?.id;
-      if (transactionId) break;
-
-      const transaction = toFireflyTransaction(record, externalId, accountId);
-      if (!transaction) continue;
-
-      await fetch(
-        new URL('/api/v1/transactions', baseUrl),
-        {
-          method: 'post',
-          headers: {
-            Authorization: `Bearer ${fireflyToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            error_if_duplicate_hash: false,
-            transactions: [transaction]
-          } satisfies AddTransactionRequest)
-        });
-    }
-
-    const { data: { attributes: { current_balance: currentBalanceText, virtual_balance: virtualBalance } } } = await fetch(
-      new URL(`/api/v1/accounts/${options[type]}`, baseUrl),
-      { headers: { Authorization: `Bearer ${fireflyToken}` } }).then(async r => await r.json() as GetAccountInfoResponse);
-
-    const currentBalance = parseFloat(currentBalanceText);
-    if (balance !== currentBalance) {
-      await fetch(
-        new URL(`/api/v1/accounts/${options[type]}`, baseUrl),
-        {
-          method: 'put',
-          body: JSON.stringify({ virtual_balance: balance - currentBalance + parseFloat(virtualBalance) }),
-          headers: {
-            Authorization: `Bearer ${fireflyToken}`,
-            'Content-Type': 'application/json'
-          }
-        });
-    }
+    await processTransactions(token, productCode, accountId, baseUrl, fireflyToken, after);
+    await updateBalance(options, type, baseUrl, fireflyToken, balance);
   }
 }
 
@@ -134,4 +141,4 @@ loadOptions(process.env.OPTION_FILE ?? '/data/options.json')
   .catch((error) => {
     console.error('Unable to load options\n', error);
     process.exit(1);
-  })
+  });
