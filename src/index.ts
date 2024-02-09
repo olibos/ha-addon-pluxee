@@ -63,7 +63,7 @@ function toFireflyTransaction(pluxeeTransaction: WalletTransaction, externalId: 
   return transaction as Transaction;
 }
 
-async function processTransactions(token: string, productCode: ProductCode, accountId: number, baseUrl: string, fireflyToken: string, after?: string) {
+async function processTransactions(token: string, productCode: ProductCode, accountId: number, { after, url: baseUrl, token: fireflyToken }: Partial<Options>) {
   for await (const record of getWalletTransactionsIterator(token, productCode)) {
     if (!record.amount || !('type' in record)) continue;
     if (after && record.date <= after) continue;
@@ -97,7 +97,7 @@ async function processTransactions(token: string, productCode: ProductCode, acco
   }
 }
 
-async function updateBalance(options: Partial<Options>, type: NumericKeys<Options>, baseUrl: string, fireflyToken: string, balance: number) {
+async function updateBalance({ url: baseUrl, token: fireflyToken, ...options }: Partial<Options>, type: NumericKeys<Options>, balance: number) {
   const { data: { attributes: { current_balance: currentBalanceText, virtual_balance: virtualBalance } } } = await fetch(
     new URL(`/api/v1/accounts/${options[type]}`, baseUrl),
     { headers: { Authorization: `Bearer ${fireflyToken}` } }).then(async (r) => await r.json() as GetAccountInfoResponse);
@@ -117,7 +117,7 @@ async function updateBalance(options: Partial<Options>, type: NumericKeys<Option
   }
 }
 
-async function check({ login, password, url: baseUrl, token: fireflyToken, after, ...options }: Options) {
+async function check({ login, password, ...options }: Options) {
   console.info('Check Pluxee');
   const token = await authenticateUser(login, password);
   const { listOfProducts } = await getWalletInfo(token);
@@ -126,8 +126,8 @@ async function check({ login, password, url: baseUrl, token: fireflyToken, after
     const accountId = type && options[type];
     if (!accountId) continue;
 
-    await processTransactions(token, productCode, accountId, baseUrl, fireflyToken, after);
-    await updateBalance(options, type, baseUrl, fireflyToken, balance);
+    await processTransactions(token, productCode, accountId, options);
+    await updateBalance(options, type, balance);
   }
 }
 
