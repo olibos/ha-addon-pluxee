@@ -1,6 +1,6 @@
 name: "Firefly iii - Pluxee"
 description: "Import Pluxee transactions effortlessly into Firefly III for streamlined finance."
-version: "0.1.0"
+version: "0.2.0"
 slug: "ha-addon-pluxee"
 init: false
 arch:
@@ -19,9 +19,8 @@ schema:
   token: str
   cron: str?
   lunch: int?
-  book: int?
   eco: int?
   gift: int?
   sportCulture: int?
-  transport: int?
   conso: int?
+  after: match(^(?:\d{4}-\d{2}-\d{2})$)?

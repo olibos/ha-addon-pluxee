@@ -1,8 +1,9 @@
 import { createHash } from 'crypto';
 const IDP_API_KEY = 'uTKvYST9XlJ57SsPMhCnWBCclbT04KOl60K6TR+eqz13oVDbwRVeB+h9N3JyBzacY4Ip0nKrfh+fsQ==';
-const APP_API_KEY = '/Nr4ewlz0HNst+zQdHJRr8/gqeha7mpbUD4vSSG9JuGfL9s+RqupJ643UnEigR3CdBXVw9VPcKKTGw==';
-const APP_BASE_URL = 'https://www.mysodexo.be/phoenix-extranet/rest/extranet-api/';
-const VERSION = '3.13.0';
+const APP_BASE_URL = 'https://bff-s4y.sodexo.be/v1/';
+const VERSION = '4.0.2';
+
+type Nullable<T> = T | null;
 
 export async function authenticateUser(login: string, password: string) {
   const IDP_URL = new URL('https://s4ap.sodexo4you.be/authenticateUser');
@@ -18,50 +19,35 @@ export async function authenticateUser(login: string, password: string) {
 }
 
 export async function getWalletInfo(token: string) {
-  const response = await fetch(new URL('getWalletInfo', APP_BASE_URL), { headers: createHeaders('', APP_API_KEY, token) });
-  return (await response.json() as GetWalletInfoResponse).Result;
+  const response = await fetch(new URL('wallets/summary', APP_BASE_URL), { headers: { Authorization: token } });
+  return await response.json() as GetWalletInfoResponse;
 }
 
-export async function getProductInfo(token: string, productType: ProductType, start = 0, size = 30) {
-  const response = await fetch(
-    new URL(`getProductInfo?start=${start}&size=${size}&productType=${productType}`, APP_BASE_URL),
-    { headers: createHeaders('', APP_API_KEY, token) });
-  return await response.json();
-}
-
-export async function * getAccountEvents(token: string, productType: ProductType, type: AccountEventInfoType = 'ALL', startDate?: Date, endDate?: Date) {
+export async function * getWalletTransactionsIterator(token: string, productCode: ProductCode, type: AccountEventInfoType = 'ALL') {
   const LIST_SIZE = 30;
-  let start = 0;
-  const { Result: { range: { size }, records } } = await getAccountEventInfo(token, productType, type, startDate, endDate, start, LIST_SIZE);
-  let record = records.record;
+  let pageIndex = 1;
   while (true) {
-    for (const item of record) yield item;
+    const { totalPages, transactions } = await getWalletTransactions(token, productCode, type, pageIndex, LIST_SIZE);
+    yield * transactions;
 
-    start += LIST_SIZE;
-    if (start >= size) return;
-
-    record = (await getAccountEventInfo(token, productType, type, startDate, endDate, start, LIST_SIZE)).Result.records.record;
+    pageIndex++;
+    if (pageIndex > totalPages) return;
   }
 }
 
-export async function getAccountEventInfo(token: string, productType: ProductType, type: AccountEventInfoType = 'ALL', startDate?: Date, endDate?: Date, start = 0, size = 30) {
-  const url = new URL('getAccountEventInfo', APP_BASE_URL);
-  url.searchParams.append('start', start.toString());
-  url.searchParams.append('size', size.toString());
-  url.searchParams.append('productType', productType);
-  if (type && type !== 'ALL') {
-    url.searchParams.append('type', type);
-  }
-
-  if (startDate && endDate) {
-    url.searchParams.append('startDate', startDate.toISOString().split('T')[0]);
-    url.searchParams.append('endDate', endDate.toISOString().split('T')[0]);
-  }
+export async function getWalletTransactions(token: string, productCode: ProductCode, transactionsGroup: AccountEventInfoType = 'ALL', pageIndex = 0, size = 30) {
+  const url = new URL('wallets/transactions', APP_BASE_URL);
+  url.searchParams.append('PageIndex', pageIndex.toString());
+  url.searchParams.append('PageSize', size.toString());
+  url.searchParams.append('ProductType', productCode);
+  url.searchParams.append('TransactionType', transactionsGroup);
+  url.searchParams.append('Period', '1');
 
   const response = await fetch(
     url,
-    { headers: createHeaders('', APP_API_KEY, token) });
-  return await response.json() as GetAccountEventInfo;
+    { headers: { Authorization: token } });
+  const result = await response.json() as WalletTransactions;
+  return result;
 }
 
 function createHeaders(payload: string, apiKey: string, token?: string, authHeaders?: boolean): Record<string, string> {
@@ -88,13 +74,13 @@ function base64DecodeToHex(base64String: string) {
   return Buffer.from(base64String, 'base64').toString('hex');
 }
 
-export interface Balance {
+export type Balance = {
   productType: ProductType
   amountAvailable: number
 }
 
-export interface ExtensionConfig {
-  productType: string
+export type ExtensionConfig = {
+  productType: ProductType
   extensionEligibility: boolean
   extensionPeriod: number
   eligibleBucketsForExtension: number
@@ -103,50 +89,64 @@ export interface ExtensionConfig {
 
 export type ProductType = 'BOOK' | 'ECO' | 'GIFT' | 'LUNCH' | 'SPORT_CULTURE' | 'TRANSPORT' | 'CONSO';
 
-export interface Result {
-  activeProducts: ProductType[]
-  balances: Balance[]
-  extensionConfigs: ExtensionConfig[]
+export type ProductCode = 'ECP' | 'ELP' | 'EEP' | 'EGP' | 'ECO';
+
+export function toProductType(code: ProductCode): Nullable<ProductType> {
+  switch (code) {
+    case 'ECP': return 'CONSO';
+    case 'ELP': return 'LUNCH';
+    case 'EEP': return 'ECO';
+    case 'EGP': return 'GIFT';
+    case 'ECO': return 'SPORT_CULTURE';
+    default: return null;
+  }
 }
 
-export interface GetWalletInfoResponse {
-  Result: Result
+export type Product = {
+  productCode: ProductCode
+  balance: number
+}
+
+export type GetWalletInfoResponse = {
+  listOfProducts: Product[]
+  extensionConfigs: ExtensionConfig[]
 }
 
 type AccountEventInfoType = 'ALL' | 'ORDER' | 'TRANSACTION' | 'REVOCATION' | 'COMPENSATION' | 'EXPIRATION' | 'EXTENSION';
 
-export type TransactionRecord = BaseRecord & {
-  transaction: {
-    to: string
-    city: string
-    channel: string
-  }
+export type BaseWalletTransaction = {
+  id: string
+  productType: ProductType
+  date: string
+  amount: Nullable<number>
 }
 
-export type OrderRecord = BaseRecord & {
-  order: {
-    orderId: number
-    orderLineId: number
-    from: string
-    units: number
-    unitPrice: number
-  }
-}
-export type BaseRecord = {
-  id: number
-  amount: number
-  time: string
+export type DepositWalletTransaction = BaseWalletTransaction & {
+  type: 'DEPOSIT'
+  clientName: string
+  numberOfUnit: number
+  faceValue: number
+  startDate: string
+  expirationDate: string
 }
 
-export type GetAccountEventInfo = {
-  Result: {
-    range: {
-      start: number
-      end: number
-      size: number
-    }
-    records: {
-      record: Array<BaseRecord | TransactionRecord | OrderRecord>
-    }
-  }
+export type SpendingWalletTransaction = BaseWalletTransaction & {
+  type: 'SPENDING'
+  affiliateName: string
+  city: string
+  paymentMethod: string
+}
+
+export type UnknownWalletTransaction = BaseWalletTransaction & {
+  type: 'UNKNOWN'
+}
+
+export type WalletTransaction = DepositWalletTransaction | SpendingWalletTransaction | UnknownWalletTransaction;
+
+export type WalletTransactions = {
+  pageIndex: number
+  pageSize: number
+  totalPages: number
+  totalItems: number
+  transactions: WalletTransaction[]
 }
