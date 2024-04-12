@@ -63,7 +63,7 @@ function createHeaders(payload: string, apiKey: string, token?: string, authHead
     'Request-Date': now,
     'Content-MD5': createHash('md5').update(payload).digest('base64'),
     'Client-Authorization': authorization,
-    Token: token as any,
+    Token: token!,
     'Cache-Control': 'no-cache',
     'Client-Version': VERSION,
     'User-Agent': 'Android'
