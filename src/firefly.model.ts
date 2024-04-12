@@ -9,56 +9,56 @@ export interface Transaction {
   currency_name: string
   currency_symbol: string
   currency_decimal_places: number
-  foreign_currency_id?: any
-  foreign_currency_code?: any
-  foreign_currency_symbol?: any
+  foreign_currency_id?: unknown
+  foreign_currency_code?: unknown
+  foreign_currency_symbol?: unknown
   foreign_currency_decimal_places: number
   amount: string
-  foreign_amount?: any
+  foreign_amount?: unknown
   description: string
   source_id: string
   source_name: string
-  source_iban?: any
+  source_iban?: unknown
   source_type: string
   destination_id: string
   destination_name: string
-  destination_iban?: any
+  destination_iban?: unknown
   destination_type: string
-  budget_id?: any
-  budget_name?: any
-  category_id?: any
-  category_name?: any
-  bill_id?: any
-  bill_name?: any
+  budget_id?: unknown
+  budget_name?: unknown
+  category_id?: unknown
+  category_name?: unknown
+  bill_id?: unknown
+  bill_name?: unknown
   reconciled: boolean
-  notes?: any
+  notes?: unknown
   tags: string[]
   internal_reference: string
-  external_id?: any
+  external_id?: unknown
   original_source: string
-  recurrence_id?: any
-  recurrence_total?: any
-  recurrence_count?: any
-  bunq_payment_id?: any
-  external_url?: any
+  recurrence_id?: unknown
+  recurrence_total?: unknown
+  recurrence_count?: unknown
+  bunq_payment_id?: unknown
+  external_url?: unknown
   import_hash_v2: string
-  sepa_cc?: any
-  sepa_ct_op?: any
-  sepa_ct_id?: any
-  sepa_db?: any
-  sepa_country?: any
-  sepa_ep?: any
-  sepa_ci?: any
-  sepa_batch_id?: any
-  interest_date?: any
-  book_date?: any
-  process_date?: any
-  due_date?: any
-  payment_date?: any
-  invoice_date?: any
-  longitude?: any
-  latitude?: any
-  zoom_level?: any
+  sepa_cc?: unknown
+  sepa_ct_op?: unknown
+  sepa_ct_id?: unknown
+  sepa_db?: unknown
+  sepa_country?: unknown
+  sepa_ep?: unknown
+  sepa_ci?: unknown
+  sepa_batch_id?: unknown
+  interest_date?: unknown
+  book_date?: unknown
+  process_date?: unknown
+  due_date?: unknown
+  payment_date?: unknown
+  invoice_date?: unknown
+  longitude?: unknown
+  latitude?: unknown
+  zoom_level?: unknown
   has_attachments: boolean
 }
 
@@ -66,7 +66,7 @@ export interface TransactionAttributes {
   created_at: string
   updated_at: string
   user: string
-  group_title?: any
+  group_title?: unknown
   transactions: Transaction[]
 }
 
@@ -125,24 +125,24 @@ export interface AccountAttributes {
   currency_decimal_places: number
   current_balance: string
   current_balance_date: string
-  notes?: any
-  monthly_payment_date?: any
-  credit_card_type?: any
-  account_number?: any
+  notes?: unknown
+  monthly_payment_date?: unknown
+  credit_card_type?: unknown
+  account_number?: unknown
   iban: string
-  bic?: any
+  bic?: unknown
   virtual_balance: string
   opening_balance: string
-  opening_balance_date?: any
-  liability_type?: any
-  liability_direction?: any
-  interest?: any
-  interest_period?: any
-  current_debt?: any
+  opening_balance_date?: unknown
+  liability_type?: unknown
+  liability_direction?: unknown
+  interest?: unknown
+  interest_period?: unknown
+  current_debt?: unknown
   include_net_worth: boolean
-  longitude?: any
-  latitude?: any
-  zoom_level?: any
+  longitude?: unknown
+  latitude?: unknown
+  zoom_level?: unknown
 }
 
 export interface GetAccountInfoResponse {
