@@ -104,11 +104,14 @@ async function updateBalance({ url: baseUrl, token: fireflyToken, ...options }: 
 
   const currentBalance = parseFloat(currentBalanceText);
   if (balance !== currentBalance) {
+    const newVirtualBalance = Math.round((balance - currentBalance + parseFloat(virtualBalance)) * 100) / 100;
+    if (newVirtualBalance == 0) return;
+
     await fetch(
       new URL(`/api/v1/accounts/${options[type]}`, baseUrl),
       {
         method: 'put',
-        body: JSON.stringify({ virtual_balance: balance - currentBalance + parseFloat(virtualBalance) }),
+        body: JSON.stringify({ virtual_balance: newVirtualBalance }),
         headers: {
           Authorization: `Bearer ${fireflyToken}`,
           'Content-Type': 'application/json'
