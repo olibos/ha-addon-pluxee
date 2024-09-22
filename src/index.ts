@@ -17,6 +17,7 @@ type Options = {
   transport?: number
   conso?: number
   after?: string
+  importAtStartUp?: boolean
 }
 
 type NumericKeys<T> = {
@@ -133,6 +134,7 @@ async function check({ login, password, ...options }: Options) {
 
 loadOptions(process.env.OPTION_FILE ?? '/data/options.json')
   .then(options => {
+    if (options.importAtStartUp) check(options);
     CronJob.from({
       cronTime: options.cron,
       onTick: async () => { await check(options); }

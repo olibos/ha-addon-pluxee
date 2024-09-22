@@ -37,7 +37,8 @@ First create your Firefly [Personal Access Token](https://docs.firefly-iii.org/h
 "sportCulture": the Firefly account ID for the Pluxee Sport/Culture account
 "transport": the Firefly account ID for the Pluxee Transport account
 "conso": the Firefly account ID for the Pluxee Consumption account
-"after": the first date to import the transactions from
+"after": the first date to import the transactions from in the format yyyy-mm-dd
+"importAtStartUp": true to start the import at each add-on start-up, false otherwise
 ```
 
 ## Installation
