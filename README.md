@@ -18,7 +18,7 @@ Pluxee Belgium is widely recognized for its diverse range of services, notably i
 This add-on being is designed to seamlessly integrate meal voucher transactions into Firefly III, streamlining the process of managing financial data. By automating the import of meal voucher transactions, users can effortlessly track and categorize their expenses within the Firefly III platform. This application simplifies financial management, providing users with a more efficient and organized way to monitor their meal-related expenditures. Its integration capabilities ensure a smooth and user-friendly experience, enhancing the overall functionality of Firefly III for those who rely on meal vouchers as part of their financial transactions..
 
 ## Configuration
-First create your Firefly [Personal Access Token](https://docs.firefly-iii.org/how-to/firefly-iii/features/api/#personal-access-tokens). Then create your Pluxee accounts manually in Firefly. Note the account's IDs : you can find them in the URL in an account's page. Finally, fill in the mandatory options in the configuration tab of the add-on.
+First create your Firefly [Personal Access Token](https://docs.firefly-iii.org/how-to/firefly-iii/features/api/#personal-access-tokens). Then create your Pluxee accounts manually in Firefly. Note the account's IDs : you can find them in the URL in an account's page. Finally, fill in the mandatory options in the configuration tab of the add-on. You can set a [cron](https://crontab.guru/) to fetch from Pluxee at regular intervals.
 
 - Addon options
 
@@ -37,7 +37,7 @@ First create your Firefly [Personal Access Token](https://docs.firefly-iii.org/h
 "sportCulture": the Firefly account ID for the Pluxee Sport/Culture account
 "transport": the Firefly account ID for the Pluxee Transport account
 "conso": the Firefly account ID for the Pluxee Consumption account
-"after": the first to import the transactions from
+"after": the first date to import the transactions from
 ```
 
 ## Installation
