@@ -17,6 +17,42 @@ Pluxee Belgium is widely recognized for its diverse range of services, notably i
 
 This add-on being is designed to seamlessly integrate meal voucher transactions into Firefly III, streamlining the process of managing financial data. By automating the import of meal voucher transactions, users can effortlessly track and categorize their expenses within the Firefly III platform. This application simplifies financial management, providing users with a more efficient and organized way to monitor their meal-related expenditures. Its integration capabilities ensure a smooth and user-friendly experience, enhancing the overall functionality of Firefly III for those who rely on meal vouchers as part of their financial transactions..
 
+## Configuration
+First create your Firefly [Personal Access Token](https://docs.firefly-iii.org/how-to/firefly-iii/features/api/#personal-access-tokens). Then create your Pluxee accounts manually in Firefly. Note the account's IDs : you can find them in the URL in an account's page. Finally, fill in the mandatory options in the configuration tab of the add-on. You can set a [cron](https://crontab.guru/) to fetch from Pluxee at regular intervals.
+
+- Addon options
+
+```yaml
+# Mandatory
+"login": your Pluxee login
+"password": your Pluxee password
+"url": your Firefly instance URL
+"token": your Firefly Personal Access Token
+# Optional
+"cron": the cron used to import data from Pluxee # More info, see https://crontab.guru/
+"book": the Firefly account ID for the Pluxee Book account
+"eco": the Firefly account ID for the Pluxee Cco account
+"gift": the Firefly account ID for the Pluxee Gift account
+"lunch": the Firefly account ID for the Pluxee Lunch account
+"sportCulture": the Firefly account ID for the Pluxee Sport/Culture account
+"transport": the Firefly account ID for the Pluxee Transport account
+"conso": the Firefly account ID for the Pluxee Consumption account
+"after": the first date to import the transactions from in the format yyyy-mm-dd
+"importAtStartUp": true to start the import at each add-on start-up, false otherwise
+```
+
+## Installation
+
+The installation of this add-on is pretty straightforward and not different in comparison to installing any other add-on.
+
+1. Add my add-ons repository to your home assistant instance (in supervisor addons store at top right, or click button below if you have configured my HA)
+   [![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://github.com/olibos/ha-addon-pluxee)
+1. Install this add-on.
+1. Click the `Save` button to store your configuration.
+1. Set the add-on options to your preferences
+1. Start the add-on.
+1. Check the logs of the add-on to see if everything went well.
+
 ## Contributing
 
 I'm all about collaboration and would love for you to jump in and contribute to this project. Whether you're spotting bugs, suggesting cool new features, or just want to spruce up the docs, your input is gold. Feel free to fork the repo, make your magic in new branches, and hit me up with pull requests. Let's make this project rock together! Big thanks for your interest and all the cool stuff you bring to the table. Cheers! 🚀
