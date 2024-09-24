@@ -109,7 +109,7 @@ async function updateBalance({ url: baseUrl, token: fireflyToken, ...options }: 
       new URL(`/api/v1/accounts/${options[type]}`, baseUrl),
       {
         method: 'put',
-        body: JSON.stringify({ virtual_balance: balance - currentBalance + parseFloat(virtualBalance) }),
+        body: JSON.stringify({ virtual_balance: Math.round((balance - currentBalance + parseFloat(virtualBalance)) * 100) / 100 }),
         headers: {
           Authorization: `Bearer ${fireflyToken}`,
           'Content-Type': 'application/json'
