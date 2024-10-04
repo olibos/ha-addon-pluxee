@@ -10,7 +10,7 @@ COPY src .
 COPY --from=depencies /src/node_modules/ /src/node_modules/
 RUN bun run build
 
-FROM ghcr.io/hassio-addons/base-nodejs:0.2.1
+FROM ghcr.io/hassio-addons/base-nodejs:0.2.5
 WORKDIR /app
 COPY --from=builder /docker/index.mjs .
 
