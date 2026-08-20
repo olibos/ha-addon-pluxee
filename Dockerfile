@@ -1,10 +1,10 @@
-FROM oven/bun:1.2-alpine as depencies
+FROM oven/bun:1.4-alpine as depencies
 WORKDIR /src
 COPY src/package.json src/bun.lockb ./
 RUN bun install
 
 
-FROM oven/bun:1.2-alpine as builder
+FROM oven/bun:1.4-alpine as builder
 WORKDIR /src
 COPY src .
 COPY --from=depencies /src/node_modules/ /src/node_modules/
